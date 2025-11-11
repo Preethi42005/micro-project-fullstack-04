@@ -1,0 +1,231 @@
+{% extends "records/base.html" %}
+{% block title %}Doctor List{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Button Styles */
+    .btn-action {
+        min-width: 110px;
+        padding: 0.5rem 1rem;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        letter-spacing: 0.3px;
+        border-radius: 6px;
+        font-size: 0.875rem;
+    }
+    
+    .btn-primary {
+        background-color: #4361ee;
+        border-color: #4361ee;
+        box-shadow: 0 2px 4px rgba(67, 97, 238, 0.1);
+    }
+    
+    .btn-primary:hover, .btn-primary:focus {
+        background-color: #3a56d4;
+        border-color: #3a56d4;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(67, 97, 238, 0.2);
+    }
+    
+    .btn-outline-secondary {
+        color: #4a5568;
+        border-color: #e2e8f0;
+        background-color: #fff;
+    }
+    
+    .btn-outline-secondary:hover, .btn-outline-secondary:focus {
+        background-color: #f8fafc;
+        border-color: #cbd5e0;
+        color: #2d3748;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(203, 213, 224, 0.2);
+    }
+    
+    /* Table Styles */
+    .table {
+        margin-bottom: 0;
+        border-collapse: separate;
+        border-spacing: 0 0.75rem;
+    }
+    
+    .table thead th {
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        letter-spacing: 0.5px;
+        color: #718096;
+        padding: 0.75rem 1.25rem;
+        border: none;
+        background-color: #f8fafc;
+        white-space: nowrap;
+    }
+    
+    .table tbody tr {
+        background-color: #fff;
+        transition: all 0.2s ease;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+    
+    .table tbody tr:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+    
+    .table td {
+        vertical-align: middle;
+        padding: 1rem 1.25rem;
+        border-top: 1px solid #f1f5f9;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    
+    .table td:first-child {
+        border-left: 1px solid #f1f5f9;
+        border-top-left-radius: 8px;
+        border-bottom-left-radius: 8px;
+    }
+    
+    .table td:last-child {
+        border-right: 1px solid #f1f5f9;
+        border-top-right-radius: 8px;
+        border-bottom-right-radius: 8px;
+    }
+    
+    /* Avatar Styles */
+    .avatar {
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #ebf4ff;
+        border-radius: 50%;
+        font-weight: 600;
+        color: #3b82f6;
+        font-size: 1.1rem;
+        margin-right: 0.75rem;
+    }
+    
+    /* Text Styles */
+    .doctor-name {
+        font-weight: 600;
+        color: #1a202c;
+        margin-bottom: 0.25rem;
+        font-size: 0.95rem;
+    }
+    
+    .doctor-department {
+        font-size: 0.8rem;
+        color: #64748b;
+        font-weight: 500;
+    }
+    
+    .specialization {
+        color: #4b5563;
+        font-weight: 500;
+    }
+    
+    .experience {
+        color: #6b7280;
+        font-size: 0.85rem;
+    }
+    
+    /* Card Header */
+    .card-header {
+        background-color: #fff !important;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 1.25rem 1.5rem;
+    }
+    
+    .card-header h2 {
+        color: #1e293b;
+        font-weight: 700;
+        font-size: 1.5rem;
+        margin: 0;
+    }
+    
+    /* Responsive Adjustments */
+    @media (max-width: 768px) {
+        .btn-action {
+            min-width: auto;
+            padding: 0.4rem 0.75rem;
+            font-size: 0.8rem;
+        }
+        
+        .table td, .table th {
+            padding: 0.75rem 0.5rem;
+        }
+        
+        .doctor-name {
+            font-size: 0.9rem;
+        }
+        
+        .doctor-department, .specialization, .experience {
+            font-size: 0.75rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h2 class="mb-0">Our Doctors</h2>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Name</th>
+                            <th>Specialization</th>
+                            <th>Experience</th>
+                            <th>Department</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doctor in doctors %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar me-3">
+                                        {{ doctor.name|slice:":1" }}
+                                    </div>
+                                    <div>
+                                        <div class="doctor-name">Dr. {{ doctor.name }}</div>
+                                        <div class="doctor-department">{{ doctor.department.name }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="specialization">{{ doctor.specialization }}</td>
+                            <td class="experience">
+                                <i class="fas fa-briefcase-medical me-1 text-muted"></i>
+                                {{ doctor.experience_years }}+ years
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark">
+                                    <i class="fas fa-hospital me-1 text-primary"></i>
+                                    {{ doctor.department.name }}
+                                </span>
+                            </td>
+                            <td class="text-nowrap">
+                                <div class="d-flex gap-2">
+                                    <a href="{% url 'connect_doctor' doctor.id %}" class="btn btn-primary btn-action" title="Connect with this doctor">
+                                        <i class="fas fa-comment-medical me-1"></i> Connect
+                                    </a>
+                                    <a href="{% url 'doctor_schedule' doctor.id %}" class="btn btn-outline-secondary btn-action" title="View availability">
+                                        <i class="far fa-calendar-alt me-1"></i> Schedule
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,655 @@
+{% extends 'records/base.html' %}
+{% load humanize %}
+
+{% block title %}Billing Management{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="neon-text">
+            <i class="fas fa-file-invoice-dollar me-2"></i>Billing
+        </h2>
+        <button class="btn btn-neon" data-bs-toggle="modal" data-bs-target="#addBillModal">
+            <i class="fas fa-plus-circle me-1"></i> Create Bill
+        </button>
+    </div>
+
+    <!-- Billing Summary Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card h-100 neon-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase text-muted mb-1">Total Revenue</h6>
+                            <h3 class="mb-0 text-primary">${{ total_revenue|default:0|intcomma }}</h3>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 p-3 rounded-circle">
+                            <i class="fas fa-dollar-sign text-primary" style="font-size: 1.5rem;"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <span class="text-success"><i class="fas fa-arrow-up me-1"></i> 12.5%</span>
+                        <span class="text-muted ms-2">vs last month</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card h-100 neon-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase text-muted mb-1">Paid</h6>
+                            <h3 class="mb-0 text-success">${{ paid_amount|default:0|intcomma }}</h3>
+                        </div>
+                        <div class="bg-success bg-opacity-10 p-3 rounded-circle">
+                            <i class="fas fa-check-circle text-success" style="font-size: 1.5rem;"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <span class="text-success"><i class="fas fa-arrow-up me-1"></i> 8.2%</span>
+                        <span class="text-muted ms-2">vs last month</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card h-100 neon-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase text-muted mb-1">Pending</h6>
+                            <h3 class="mb-0 text-warning">${{ pending_amount|default:0|intcomma }}</h3>
+                        </div>
+                        <div class="bg-warning bg-opacity-10 p-3 rounded-circle">
+                            <i class="fas fa-clock text-warning" style="font-size: 1.5rem;"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <span class="text-danger"><i class="fas fa-arrow-down me-1"></i> 3.1%</span>
+                        <span class="text-muted ms-2">vs last month</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card h-100 neon-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase text-muted mb-1">Overdue</h6>
+                            <h3 class="mb-0 text-danger">${{ overdue_amount|default:0|intcomma }}</h3>
+                        </div>
+                        <div class="bg-danger bg-opacity-10 p-3 rounded-circle">
+                            <i class="fas fa-exclamation-circle text-danger" style="font-size: 1.5rem;"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <span class="text-danger"><i class="fas fa-arrow-up me-1"></i> 5.7%</span>
+                        <span class="text-muted ms-2">vs last month</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Billing Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-list-ul me-2"></i>Recent Transactions</h5>
+            <div class="input-group" style="max-width: 300px;">
+                <input type="text" class="form-control" placeholder="Search bills..." id="searchBills">
+                <button class="btn btn-outline-secondary" type="button" id="searchButton">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Invoice #</th>
+                            <th>Patient</th>
+                            <th>Date</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Due Date</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bill in bills %}
+                        <tr>
+                            <td>#{{ bill.id|stringformat:"05d" }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar me-2">
+                                        {{ bill.patient.name|slice:":1"|upper }}
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">{{ bill.patient.name }}</h6>
+                                        <small class="text-muted">{{ bill.patient.phone|default:"No phone" }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ bill.date|date:"M d, Y" }}</td>
+                            <td>${{ bill.amount|intcomma }}</td>
+                            <td>
+                                {% if bill.status == 'Paid' %}
+                                <span class="badge bg-success bg-opacity-10 text-success">
+                                    <i class="fas fa-check-circle me-1"></i> {{ bill.status }}
+                                </span>
+                                {% elif bill.status == 'Overdue' %}
+                                <span class="badge bg-danger bg-opacity-10 text-danger">
+                                    <i class="fas fa-exclamation-circle me-1"></i> {{ bill.status }}
+                                </span>
+                                {% else %}
+                                <span class="badge bg-warning bg-opacity-10 text-warning">
+                                    <i class="fas fa-clock me-1"></i> {{ bill.status|default:"Pending" }}
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>{{ bill.due_date|date:"M d, Y"|default:"-" }}</td>
+                            <td class="text-end">
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-sm btn-outline-primary view-bill" 
+                                            data-bs-toggle="tooltip" 
+                                            data-bs-placement="top"
+                                            title="View Details"
+                                            data-bill-id="{{ bill.id }}">
+                                        <i class="far fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary edit-bill" 
+                                            data-bs-toggle="tooltip" 
+                                            data-bs-placement="top"
+                                            title="Edit"
+                                            data-bill-id="{{ bill.id }}">
+                                        <i class="far fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-success payment-bill" 
+                                            data-bs-toggle="tooltip" 
+                                            data-bs-placement="top"
+                                            title="Record Payment"
+                                            data-bill-id="{{ bill.id }}">
+                                        <i class="fas fa-money-bill-wave"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">
+                                <div class="text-muted">
+                                    <i class="far fa-folder-open fa-3x mb-3"></i>
+                                    <p class="mb-0">No billing records found</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <nav aria-label="Billing pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">
+                            <i class="fas fa-chevron-left"></i>
+                        </span>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                        {% else %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">
+                            <i class="fas fa-chevron-right"></i>
+                        </span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- View Bill Modal -->
+<div class="modal fade" id="viewBillModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark border border-primary">
+            <div class="modal-header border-bottom border-primary">
+                <h5 class="modal-title text-primary">
+                    <i class="fas fa-file-invoice-dollar me-2"></i>Invoice #<span id="invoiceNumber"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6>Bill To:</h6>
+                        <p class="mb-1" id="billPatient"></p>
+                        <p class="mb-1" id="billAddress"></p>
+                        <p class="mb-1" id="billPhone"></p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <p class="mb-1"><strong>Date:</strong> <span id="billDate"></span></p>
+                        <p class="mb-1"><strong>Due Date:</strong> <span id="billDueDate"></span></p>
+                        <p class="mb-1"><strong>Status:</strong> <span id="billStatus"></span></p>
+                        <p class="mb-1"><strong>Payment Method:</strong> <span id="billPaymentMethod"></span></p>
+                    </div>
+                </div>
+                
+                <div class="table-responsive mb-4">
+                    <table class="table table-dark table-hover">
+                        <thead>
+                            <tr>
+                                <th>Description</th>
+                                <th class="text-end">Quantity</th>
+                                <th class="text-end">Price</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="billItems">
+                            <!-- Bill items will be inserted here by JavaScript -->
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-active">
+                                <td colspan="3" class="text-end fw-bold">Subtotal:</td>
+                                <td class="text-end" id="billSubtotal">$0.00</td>
+                            </tr>
+                            <tr class="table-active">
+                                <td colspan="3" class="text-end fw-bold">Tax (10%):</td>
+                                <td class="text-end" id="billTax">$0.00</td>
+                            </tr>
+                            <tr class="table-active">
+                                <td colspan="3" class="text-end fw-bold">Total:</td>
+                                <td class="text-end fw-bold text-primary" id="billTotal">$0.00</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Notes</label>
+                    <div class="form-control bg-dark text-light" id="billNotes" style="min-height: 100px;"></div>
+                </div>
+                
+                <div class="payment-history mt-4">
+                    <h6 class="border-bottom pb-2">Payment History</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-borderless">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Method</th>
+                                    <th>Status</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="paymentHistory">
+                                <!-- Payment history will be inserted here by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top border-primary">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Close
+                </button>
+                <button type="button" class="btn btn-primary" id="printBill">
+                    <i class="fas fa-print me-1"></i> Print
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Bill Modal -->
+<div class="modal fade" id="addBillModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-file-invoice-dollar me-2"></i>Create New Bill
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="billForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="patientSelect" class="form-label">Patient</label>
+                            <select class="form-select" id="patientSelect" required>
+                                <option value="" selected disabled>Select patient...</option>
+                                {% for patient in patients %}
+                                <option value="{{ patient.id }}">{{ patient.name }} (ID: {{ patient.id }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="billDate" class="form-label">Date</label>
+                            <input type="date" class="form-control" id="billDate" required>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label">Bill Items</label>
+                            <div id="billItemsContainer">
+                                <div class="bill-item row g-2 mb-2">
+                                    <div class="col-md-5">
+                                        <input type="text" class="form-control item-description" placeholder="Description" required>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <input type="number" class="form-control item-quantity" value="1" min="1" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" class="form-control item-price" value="0.00" min="0" step="0.01" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-item">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="addBillItem">
+                                <i class="fas fa-plus me-1"></i> Add Item
+                            </button>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="paymentMethod" class="form-label">Payment Method</label>
+                            <select class="form-select" id="paymentMethod" required>
+                                <option value="Cash">Cash</option>
+                                <option value="Credit Card">Credit Card</option>
+                                <option value="Insurance">Insurance</option>
+                                <option value="Bank Transfer">Bank Transfer</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" required>
+                                <option value="Paid">Paid</option>
+                                <option value="Pending" selected>Pending</option>
+                                <option value="Overdue">Overdue</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="notes" rows="3" placeholder="Additional notes..."></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-top border-primary">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-primary" id="saveBill">
+                    <i class="fas fa-save me-1"></i> Save Bill
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+                            </td>
+                        </tr>
+                        
+                        <!-- View Bill Modal -->
+                        <div class="modal fade" id="viewBillModal{{ bill.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Invoice #{{ bill.id }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="row mb-4">
+                                            <div class="col-md-6">
+                                                <h6>Bill To:</h6>
+                                                <p class="mb-1">{{ bill.patient.name }}</p>
+                                                <p class="mb-1">{{ bill.patient.address }}</p>
+                                                <p class="mb-1">{{ bill.patient.phone }}</p>
+                                            </div>
+                                            <div class="col-md-6 text-md-end">
+                                                <p class="mb-1"><strong>Date:</strong> {{ bill.date|date:"F d, Y" }}</p>
+                                                <p class="mb-1"><strong>Due Date:</strong> {{ bill.due_date|date:"F d, Y" }}</p>
+                                                <p class="mb-1"><strong>Status:</strong> 
+                                                    <span class="badge bg-{{ bill.get_status_display|lower }}">
+                                                        {{ bill.get_status_display }}
+                                                    </span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="table-responsive">
+                                            <table class="table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Description</th>
+                                                        <th class="text-end">Amount</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for item in bill.items.all %}
+                                                    <tr>
+                                                        <td>{{ item.description }}</td>
+                                                        <td class="text-end">${{ item.amount }}</td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <th class="text-end">Total:</th>
+                                                        <th class="text-end">${{ bill.amount }}</th>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                        
+                                        {% if bill.notes %}
+                                        <div class="mt-3">
+                                            <h6>Notes:</h6>
+                                            <p>{{ bill.notes }}</p>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                        <a href="{% url 'download_invoice' bill.id %}" class="btn btn-primary">
+                                            <i class="fas fa-download"></i> Download PDF
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center">No billing records found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                    <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Add Bill Modal -->
+<div class="modal fade" id="addBillModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Bill</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="post" id="billingForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="patient" class="form-label">Patient</label>
+                        <select class="form-select" id="patient" name="patient" required>
+                            <option value="" selected disabled>Select Patient</option>
+                            {% for patient in patients %}
+                            <option value="{{ patient.id }}">{{ patient.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="date" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="date" name="date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="due_date" class="form-label">Due Date</label>
+                        <input type="date" class="form-control" id="due_date" name="due_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Bill Items</label>
+                        <div id="billItems">
+                            <div class="row g-2 mb-2">
+                                <div class="col-md-7">
+                                    <input type="text" class="form-control" name="item_description[]" placeholder="Description" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="number" class="form-control item-amount" name="item_amount[]" placeholder="Amount" step="0.01" required>
+                                </div>
+                                <div class="col-md-1">
+                                    <button type="button" class="btn btn-danger btn-sm remove-item" disabled>
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addBillItem">
+                            <i class="fas fa-plus"></i> Add Item
+                        </button>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="2"></textarea>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Create Bill</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add bill item row
+    document.getElementById('addBillItem').addEventListener('click', function() {
+        const itemRow = `
+            <div class="row g-2 mb-2">
+                <div class="col-md-7">
+                    <input type="text" class="form-control" name="item_description[]" placeholder="Description" required>
+                </div>
+                <div class="col-md-4">
+                    <input type="number" class="form-control item-amount" name="item_amount[]" placeholder="Amount" step="0.01" required>
+                </div>
+                <div class="col-md-1">
+                    <button type="button" class="btn btn-danger btn-sm remove-item">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        document.getElementById('billItems').insertAdjacentHTML('beforeend', itemRow);
+        
+        // Enable all remove buttons except the first one
+        const removeButtons = document.querySelectorAll('.remove-item');
+        removeButtons.forEach(btn => {
+            btn.disabled = false;
+        });
+        document.querySelector('.remove-item').disabled = removeButtons.length <= 1;
+    });
+    
+    // Remove bill item row
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-item')) {
+            const row = e.target.closest('.row');
+            if (row) {
+                row.remove();
+                // Disable remove button if only one item left
+                const removeButtons = document.querySelectorAll('.remove-item');
+                if (removeButtons.length === 1) {
+                    removeButtons[0].disabled = true;
+                }
+            }
+        }
+    });
+    
+    // Set default dates
+    const today = new Date().toISOString().split('T')[0];
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 30);
+    const dueDateStr = dueDate.toISOString().split('T')[0];
+    
+    document.getElementById('date').value = today;
+    document.getElementById('due_date').value = dueDateStr;
+});
+</script>
+{% endblock %}

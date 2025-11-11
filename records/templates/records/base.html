@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Medical Record System{% endblock %}</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Base colors */
+        :root {
+            /* Dark theme - Neon Blue */
+            --neon-primary: #03e9f4;
+            --neon-secondary: #0088ff;
+            --dark-bg: #0a192f;
+            --card-bg: rgba(17, 34, 64, 0.5);
+            --text-color: #e6f1ff;
+            --text-muted: #a8b2d1;
+            --border-color: rgba(3, 233, 244, 0.1);
+            
+            /* Light theme - Green & Orange */
+            --light-primary: #28a745;
+            --light-secondary: #fd7e14;
+            --light-bg: #f8f9fa;
+            --light-card-bg: #ffffff;
+            --light-text: #2c3e50;
+            --light-muted: #6c757d;
+            --light-border: #dee2e6;
+        }
+        
+        [data-bs-theme="dark"] {
+            --bs-primary: var(--neon-primary);
+            --bs-secondary: var(--neon-secondary);
+            --bs-body-bg: var(--dark-bg);
+            --bs-body-color: var(--text-color);
+            --bs-secondary-color: var(--text-muted);
+            --bs-border-color: var(--border-color);
+            --bs-card-bg: var(--card-bg);
+            --bs-link-color: var(--neon-primary);
+            --bs-link-hover-color: #00c3ff;
+            --bs-nav-link-hover-color: #00c3ff;
+            --bs-nav-pills-link-active-bg: var(--neon-primary);
+            --bs-nav-pills-link-active-color: #000;
+            
+            /* Custom scrollbar */
+            scrollbar-width: thin;
+            scrollbar-color: rgba(3, 233, 244, 0.5) rgba(10, 25, 47, 0.8);
+        }
+        
+        [data-bs-theme="light"] {
+            --bs-primary: var(--light-primary);
+            --bs-secondary: var(--light-secondary);
+            --bs-body-bg: var(--light-bg);
+            --bs-body-color: var(--light-text);
+            --bs-secondary-color: var(--light-muted);
+            --bs-border-color: var(--light-border);
+            --bs-card-bg: var(--light-card-bg);
+            --bs-link-color: var(--light-primary);
+            --bs-link-hover-color: #1e7e34;
+            --bs-nav-link-hover-color: #1e7e34;
+            --bs-nav-pills-link-active-bg: var(--light-primary);
+            --bs-nav-pills-link-active-color: #fff;
+        }
+        
+        body {
+            transition: all 0.3s ease-in-out;
+            min-height: 100vh;
+            background: var(--bs-body-bg);
+            color: var(--bs-body-color);
+            font-family: 'Segoe UI', 'Roboto', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Card styling */
+        .card {
+            background: var(--bs-card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin: 1rem 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            color: var(--bs-body-color);
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(3, 233, 244, 0.2);
+            border-color: var(--neon-primary);
+        }
+        
+        .card-header {
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 1.5rem;
+        }
+        
+        /* Table styling */
+        .table {
+            color: var(--bs-body-color);
+            --bs-table-bg: transparent;
+            --bs-table-striped-bg: rgba(0, 0, 0, 0.02);
+            --bs-table-hover-bg: rgba(0, 0, 0, 0.05);
+        }
+        
+        .table th {
+            background: rgba(3, 233, 244, 0.05);
+            border-bottom: 2px solid rgba(3, 233, 244, 0.2);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            color: var(--neon-primary);
+        }
+        
+        .table td {
+            border-color: rgba(3, 233, 244, 0.1);
+            vertical-align: middle;
+        }
+        
+        .table-hover tbody tr:hover {
+            background: rgba(3, 233, 244, 0.05);
+        }
+        
+        /* Navigation */
+        .navbar {
+            background: rgba(10, 25, 47, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid rgba(3, 233, 244, 0.1);
+        }
+        
+        .navbar-brand {
+            font-size: 1.75rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #fff, var(--neon-primary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 10px rgba(3, 233, 244, 0.3);
+        }
+        
+        .nav-link {
+            transition: color 0.2s ease-in-out;
+        }
+        
+        /* Buttons */
+        .btn-primary {
+            --bs-btn-bg: var(--bs-primary);
+            --bs-btn-border-color: var(--bs-primary);
+            --bs-btn-hover-bg: var(--bs-link-hover-color);
+            --bs-btn-hover-border-color: var(--bs-link-hover-color);
+            --bs-btn-active-bg: var(--bs-link-hover-color);
+            --bs-btn-active-border-color: var(--bs-link-hover-color);
+        }
+        
+        .btn-outline-primary {
+            --bs-btn-color: var(--bs-primary);
+            --bs-btn-border-color: var(--bs-primary);
+            --bs-btn-hover-bg: var(--bs-primary);
+            --bs-btn-hover-border-color: var(--bs-primary);
+            --bs-btn-active-bg: var(--bs-primary);
+            --bs-btn-active-border-color: var(--bs-primary);
+        }
+        
+        /* Form controls */
+        .form-control, .form-select {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(3, 233, 244, 0.2);
+            color: var(--bs-body-color);
+        }
+        
+        .form-control:focus, .form-select:focus {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--neon-primary);
+            color: #fff;
+            box-shadow: 0 0 0 0.25rem rgba(3, 233, 244, 0.25);
+        }
+        
+        .form-label {
+            color: var(--text-muted);
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(10, 25, 47, 0.8);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(3, 233, 244, 0.5);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--neon-primary);
+        }
+        
+        /* Animation for page load */
+        @keyframes fadeIn {
+            from { 
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+        
+        /* Theme toggle button */
+        #themeToggle {
+            cursor: pointer;
+        }
+        
+        #themeIcon {
+            transition: transform 0.3s ease-in-out;
+        }
+        
+        #themeToggle:checked + #themeIcon {
+            color: var(--bs-warning);
+        }
+    </style>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    </style>
+    {% block head_js %}{% endblock %}
+</head>
+<body class="bg-dark">
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'patient_list' %}">
+                <i class="fas fa-hospital me-2"></i>MediCare
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'patient_list' %}">
+                            <i class="fas fa-users me-1"></i> Patients
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'doctor_list' %}">
+                            <i class="fas fa-user-md me-1"></i> Doctors
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'appointment_list' %}">
+                            <i class="far fa-calendar-alt me-1"></i> Appointments
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'reports' %}">
+                            <i class="fas fa-chart-bar me-1"></i> Reports
+                        </a>
+                    </li>
+                    {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'settings' %}">
+                            <i class="fas fa-cog me-1"></i> Settings
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'admin:logout' %}">
+                            <i class="fas fa-sign-out-alt me-1"></i> Logout
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'admin:login' %}?next={{ request.path }}">
+                            <i class="fas fa-sign-in-alt me-1"></i> Login
+                        </a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item ms-3 d-flex align-items-center">
+                    <div class="form-check form-switch m-0">
+                        <input class="form-check-input m-0" type="checkbox" role="switch" id="themeToggle">
+                        <label class="form-check-label ms-2" for="themeToggle">
+                            <i id="themeIcon" class="fas fa-moon"></i>
+                        </label>
+                    </div>
+                </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="content fade-in">
+        {% if messages %}
+        <div class="container mb-4">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        {% block content %}{% endblock %}
+    </div>
+    
+    <footer class="text-center text-muted py-4 border-top border-dark">
+        <div class="container">
+            <p class="mb-0">&copy; {% now "Y" %} MediCare System. All rights reserved.</p>
+        </div>
+    </footer>
+    
+    <!-- Bootstrap 5 JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Theme handling
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-bs-theme', theme);
+            localStorage.setItem('theme', theme);
+            
+            // Update toggle switch and icon
+            const themeToggle = document.getElementById('themeToggle');
+            const themeIcon = document.getElementById('themeIcon');
+            if (themeToggle && themeIcon) {
+                themeToggle.checked = theme === 'dark';
+                themeIcon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+            }
+        }
+        
+        // Initialize theme on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set initial theme
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            setTheme(savedTheme);
+            
+            // Toggle theme when switch is clicked
+            const themeToggle = document.getElementById('themeToggle');
+            if (themeToggle) {
+                themeToggle.addEventListener('change', function() {
+                    const newTheme = this.checked ? 'dark' : 'light';
+                    setTheme(newTheme);
+                });
+            }
+        });
+    </script>
+    <!-- Custom JS -->
+    <script>
+        // Enable tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        
+        // Add active class to current nav item
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentPath = window.location.pathname;
+            document.querySelectorAll('.nav-link').forEach(link => {
+                if (link.getAttribute('href') === currentPath) {
+                    link.classList.add('active');
+                    link.setAttribute('aria-current', 'page');
+                }
+            });
+        });
+    </script>
+    
+    {% block foot_js %}{% endblock %}
+</body>
+</html>

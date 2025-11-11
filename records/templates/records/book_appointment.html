@@ -1,0 +1,99 @@
+{% extends "records/base.html" %}
+{% load static %}
+
+{% block title %}Book Appointment{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 rounded-lg">
+                <div class="card-header bg-transparent py-3 border-bottom">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="mb-0">
+                            <i class="fas fa-calendar-plus text-primary me-2"></i>
+                            Book Appointment
+                        </h3>
+                        <span class="badge bg-soft-primary text-primary px-3 py-2">
+                            <i class="fas fa-user me-1"></i>
+                            {{ patient.name }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" action="{% url 'book_appointment' patient.id %}" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Debug info -->
+                        <div class="alert alert-info d-none" id="form-debug"></div>
+                        
+                        <div class="row g-3 mb-4">
+                            {% for field in form %}
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ field.id_for_label }}" class="form-label small text-muted mb-1">
+                                        {{ field.label }}
+                                        {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+                                    </label>
+                                    {{ field }}
+                                    {% if field.help_text %}
+                                        <small class="form-text text-muted">{{ field.help_text }}</small>
+                                    {% endif %}
+                                    {% for error in field.errors %}
+                                        <div class="invalid-feedback d-block">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center border-top pt-4 mt-4">
+                            <a href="{% url 'patient_detail' patient.id %}" class="btn position-relative overflow-hidden" 
+                               style="background: transparent !important;
+                                      color: #03e9f4 !important;
+                                      border: 1px solid rgba(3, 233, 244, 0.7) !important;
+                                      box-shadow: 0 0 10px rgba(3, 233, 244, 0.3), 
+                                                  inset 0 0 10px rgba(3, 233, 244, 0.2);
+                                      text-shadow: 0 0 5px rgba(3, 233, 244, 0.5);
+                                      transition: all 0.3s ease;
+                                      padding: 0.5rem 1.5rem;">
+                                <i class="fas fa-arrow-left me-2"></i> Back to Patient
+                            </a>
+                            <button type="submit" class="btn btn-primary position-relative overflow-hidden" 
+                                style="background: rgba(3, 233, 244, 0.1); 
+                                       color: #03e9f4 !important;
+                                       border: 1px solid rgba(3, 233, 244, 0.3);
+                                       box-shadow: 0 0 10px rgba(3, 233, 244, 0.5), 
+                                                  0 0 20px rgba(3, 233, 244, 0.3), 
+                                                  inset 0 0 10px rgba(3, 233, 244, 0.3);">
+                                <i class="fas fa-calendar-check me-2"></i> Book Appointment
+                                <span class="position-absolute top-0 start-100 translate-middle p-2 bg-primary border border-light rounded-circle">
+                                    <span class="visually-hidden">Submit</span>
+                                </span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-control:focus, .form-select:focus {
+        border-color: rgba(3, 233, 244, 0.5);
+        box-shadow: 0 0 0 0.25rem rgba(3, 233, 244, 0.25);
+    }
+    .btn-primary {
+        transition: all 0.3s ease;
+    }
+    .btn-primary:hover, a.btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0 20px rgba(3, 233, 244, 0.7), 
+                    0 0 40px rgba(3, 233, 244, 0.4),
+                    inset 0 0 15px rgba(3, 233, 244, 0.4) !important;
+        color: #fff !important;
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.9);
+    }
+</style>
+{% endblock %}

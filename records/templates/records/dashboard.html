@@ -1,0 +1,84 @@
+{% extends 'records/base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Dashboard</h2>
+    
+    <!-- Stats Cards -->
+    <div class="row">
+        <div class="col-md-3 mb-4">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">Total Patients</h5>
+                    <p class="card-text display-4">{{ patient_count }}</p>
+                    <a href="{% url 'patient_list' %}" class="text-white">View all</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">Today's Appointments</h5>
+                    <p class="card-text display-4">{{ today_appointments_count }}</p>
+                    <a href="{% url 'appointment_list' %}" class="text-white">View all</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h5 class="card-title">Total Doctors</h5>
+                    <p class="card-text display-4">{{ doctor_count }}</p>
+                    <a href="{% url 'doctor_list' %}" class="text-white">View all</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <h5 class="card-title">Pending Bills</h5>
+                    <p class="card-text display-4">{{ pending_bills_count }}</p>
+                    <a href="{% url 'billing_list' %}" class="text-white">View all</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Appointments -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>Upcoming Appointments</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Patient</th>
+                            <th>Doctor</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for appointment in upcoming_appointments %}
+                        <tr>
+                            <td>{{ appointment.patient.name }}</td>
+                            <td>Dr. {{ appointment.doctor.name }}</td>
+                            <td>{{ appointment.date }}</td>
+                            <td>{{ appointment.time_slot.start_time }} - {{ appointment.time_slot.end_time }}</td>
+                            <td><span class="badge bg-{{ appointment.status|lower }}">{{ appointment.status }}</span></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">No upcoming appointments</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends "records/base.html" %}
+{% block title %}Patients{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">Patients</h1>
+    <a href="{% url 'add_patient' %}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i> Add Patient
+    </a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="mb-3">
+            <input type="text" id="searchPatient" class="form-control" placeholder="Search patients by name...">
+        </div>
+        
+        <div class="row g-4">
+            {% for patient in patients %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title mb-2">{{ patient.name }}</h5>
+                        <p class="text-muted small mb-2">
+                            <i class="fas fa-birthday-cake me-2"></i>{{ patient.dob|date:"M d, Y" }}
+                        </p>
+                        <p class="text-muted small mb-3">
+                            <i class="fas fa-map-marker-alt me-2"></i>{{ patient.address|truncatechars:30 }}
+                        </p>
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'patient_detail' patient.id %}" class="btn btn-sm btn-outline-primary flex-grow-1">
+                                <i class="fas fa-file-medical me-1"></i> Records
+                            </a>
+                            <a href="{% url 'book_appointment' patient.id %}" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-calendar-plus"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="fas fa-user-injured fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No patients found. Add your first patient to get started.</p>
+                    <a href="{% url 'add_patient' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i> Add Patient
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block foot_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchPatient');
+        if (searchInput) {
+            searchInput.addEventListener('keyup', function() {
+                const filter = this.value.toLowerCase();
+                const cards = document.querySelectorAll('.col-md-6.col-lg-4');
+                
+                cards.forEach(card => {
+                    const name = card.querySelector('.card-title').textContent.toLowerCase();
+                    card.style.display = name.includes(filter) ? '' : 'none';
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

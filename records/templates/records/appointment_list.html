@@ -1,0 +1,414 @@
+{% extends "records/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .status-badge {
+        transition: all 0.3s ease;
+    }
+    
+    .status-scheduled {
+        background: rgba(0, 123, 255, 0.1) !important;
+        color: #03e9f4 !important;
+        border: 1px solid rgba(3, 233, 244, 0.3);
+        box-shadow: 0 0 10px rgba(3, 233, 244, 0.5), 0 0 20px rgba(3, 233, 244, 0.3), inset 0 0 10px rgba(3, 233, 244, 0.3);
+    }
+    
+    .status-completed {
+        background: rgba(40, 167, 69, 0.1) !important;
+        color: #00ff9d !important;
+        border: 1px solid rgba(0, 255, 157, 0.3);
+        box-shadow: 0 0 10px rgba(0, 255, 157, 0.5), 0 0 20px rgba(0, 255, 157, 0.3);
+    }
+    
+    .status-cancelled {
+        background: rgba(220, 53, 69, 0.1) !important;
+        color: #ff4d6d !important;
+        border: 1px solid rgba(255, 77, 109, 0.3);
+        box-shadow: 0 0 10px rgba(255, 77, 109, 0.5), 0 0 20px rgba(255, 77, 109, 0.3);
+    }
+    
+    .status-default {
+        background: rgba(108, 117, 125, 0.1) !important;
+        color: #adb5bd !important;
+        border: 1px solid rgba(173, 181, 189, 0.3);
+    }
+</style>
+{% endblock extra_css %}
+
+{% block title %}Appointments{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-calendar-alt text-primary me-2"></i>Appointments
+        </h1>
+        <div>
+            <a href="{% url 'patient_list' %}" class="btn btn-primary">
+                <i class="fas fa-user-plus me-2"></i> Book Appointment
+            </a>
+            <a href="{% url 'appointment_list' %}" class="btn btn-outline-secondary ms-2">
+                <i class="fas fa-sync-alt me-2"></i> Refresh
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters Card -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body py-3">
+            <div class="row g-3">
+                
+            </div>
+        </div>
+    </div>
+
+    <!-- Appointments Table -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Patient</th>
+                            <th>Doctor</th>
+                            <th>Date/Time</th>
+                            <th>Status</th>
+                            <th>Notes</th>
+                            <th class="text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="appointmentsTableBody">
+                        {% for app in appointments %}
+                        <tr class="appointment-row">
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm bg-soft-primary rounded-circle me-3 d-flex align-items-center justify-content-center">
+                                        <i class="fas fa-user text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">{{ app.patient.name }}</h6>
+                                        <small class="text-muted">ID: {{ app.patient.id|stringformat:"04d" }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm bg-soft-info rounded-circle me-3 d-flex align-items-center justify-content-center">
+                                        <i class="fas fa-user-md text-info"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">Dr. {{ app.doctor.name }}</h6>
+                                        <small class="text-muted">{{ app.doctor.specialty|default:"General" }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-column">
+                                    <span class="fw-medium">{{ app.date|date:"M d, Y" }}</span>
+                                    <small class="text-muted">{{ app.date|time:"h:i A" }}</small>
+                                </div>
+                            </td>
+                            <td>
+    {% with app_status=app.status|lower %}
+    <div class="position-relative d-inline-block">
+        <span class="position-absolute top-0 start-100 translate-middle p-2 
+            {% if app_status == 'scheduled' %}bg-primary
+            {% elif app_status == 'completed' %}bg-success
+            {% elif app_status == 'cancelled' %}bg-danger
+            {% endif %}
+            border border-light rounded-circle">
+            <span class="visually-hidden">Status indicator</span>
+        </span>
+        <span class="badge rounded-pill py-2 px-3 position-relative overflow-hidden status-badge status-{{ app_status|default:'default' }}">
+            <i class="fas 
+                {% if app_status == 'scheduled' %}fa-calendar-check
+                {% elif app_status == 'completed' %}fa-check-circle
+                {% elif app_status == 'cancelled' %}fa-times-circle
+                {% else %}fa-question-circle
+                {% endif %} me-1"></i>
+            {{ app_status|title }}
+        </span>
+    </div>
+    {% endwith %}
+</td>
+                            <td>
+                                <div class="text-truncate" style="max-width: 200px;" title="{{ app.notes|default:'No notes' }}">
+                                    {{ app.notes|truncatechars:30|default:"-" }}
+                                </div>
+                            </td>
+                            <td class="text-end pe-4">
+                                <div class="btn-group" role="group">
+                                    {% with status=app.status|lower %}
+                                    {% if status != 'completed' and status != 'cancelled' %}
+                                        <button type="button" class="btn btn-sm btn-soft-success" 
+                                            onclick="updateAppointmentStatus('{{ app.id }}', 'completed')"
+                                            data-bs-toggle="tooltip" data-bs-placement="top" title="Mark as Completed">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <a href="{% url 'edit_appointment' app.id %}" class="btn btn-sm btn-soft-primary"
+                                           data-bs-toggle="tooltip" data-bs-placement="top" title="Edit Appointment">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-soft-danger" 
+                                            onclick="updateAppointmentStatus('{{ app.id }}', 'cancelled')"
+                                            data-bs-toggle="tooltip" data-bs-placement="top" title="Cancel Appointment">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    {% else %}
+                                        <button type="button" class="btn btn-sm btn-soft-secondary" disabled>
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <a href="{% url 'edit_appointment' app.id %}" class="btn btn-sm btn-soft-secondary"
+                                           data-bs-toggle="tooltip" data-bs-placement="top" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-soft-secondary" disabled>
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    {% endif %}
+                                    {% endwith %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5">
+                                <div class="py-5">
+                                    <div class="mb-4">
+                                        <i class="fas fa-calendar-times fa-4x text-muted"></i>
+                                    </div>
+                                    <h5 class="text-muted mb-3">No Appointments Found</h5>
+                                    <p class="text-muted mb-4">There are no appointments scheduled yet. Start by booking a new appointment.</p>
+                                    <a href="{% url 'patient_list' %}" class="btn btn-primary">
+                                        <i class="fas fa-user-plus me-2"></i> Book Appointment
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Pagination -->
+        {% if appointments.has_other_pages %}
+        <div class="card-footer bg-transparent pt-3">
+            <nav aria-label="Appointments pagination">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if appointments.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ appointments.previous_page_number }}" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&laquo;</span>
+                        </li>
+                    {% endif %}
+                    
+                    {% for i in page_range|default:appointments.paginator.page_range %}
+                        {% if appointments.number == i %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ i }} <span class="visually-hidden">(current)</span></span>
+                            </li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if appointments.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ appointments.next_page_number }}" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&raquo;</span>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Status Update Toast -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="statusToast" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+
+{% block extra_js %}
+<!-- Date Range Picker CSS -->
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+
+<!-- Date Range Picker JS -->
+<script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+
+<script>
+// Initialize tooltips
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
+});
+
+// Initialize date range picker
+$(function() {
+    $('input[id="dateFilter"]').daterangepicker({
+        opens: 'left',
+        autoUpdateInput: false,
+        locale: {
+            cancelLabel: 'Clear',
+            format: 'MM/DD/YYYY'
+        }
+    });
+
+    $('input[id="dateFilter"]').on('apply.daterangepicker', function(ev, picker) {
+        $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
+        filterAppointments();
+    });
+
+    $('input[id="dateFilter"]').on('cancel.daterangepicker', function(ev, picker) {
+        $(this).val('');
+        filterAppointments();
+    });
+});
+
+// Filter appointments based on search and filters
+function filterAppointments() {
+    const searchTerm = $('#searchInput').val().toLowerCase();
+    const statusFilter = $('#statusFilter').val().toLowerCase();
+    const dateRange = $('#dateFilter').val();
+    
+    $('.appointment-row').each(function() {
+        const $row = $(this);
+        const status = $row.data('status');
+        const rowText = $row.text().toLowerCase();
+        
+        // Check status filter
+        const statusMatch = !statusFilter || status === statusFilter.toLowerCase();
+        
+        // Check search term
+        const searchMatch = !searchTerm || rowText.includes(searchTerm);
+        
+        // Check date range if set
+        let dateMatch = true;
+        if (dateRange) {
+            const dates = dateRange.split(' - ');
+            if (dates.length === 2) {
+                const rowDate = new Date($row.find('td:eq(2)').text().trim());
+                const startDate = new Date(dates[0]);
+                const endDate = new Date(dates[1]);
+                dateMatch = rowDate >= startDate && rowDate <= endDate;
+            }
+        }
+        
+        // Show/hide row based on filters
+        if (statusMatch && searchMatch && dateMatch) {
+            $row.show();
+        } else {
+            $row.hide();
+        }
+    });
+}
+
+// Initialize filters
+$('#searchInput, #statusFilter').on('keyup change', filterAppointments);
+
+// Reset filters
+$('#resetFilters').click(function() {
+    $('#searchInput').val('');
+    $('#statusFilter').val('');
+    $('#dateFilter').val('');
+    filterAppointments();
+});
+
+// Initialize toast
+var statusToast = new bootstrap.Toast(document.getElementById('statusToast'), {
+    autohide: true,
+    delay: 3000
+});
+
+// Show toast message
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('statusToast');
+    const toastBody = toast.querySelector('.toast-body');
+    
+    // Set toast color based on type
+    toast.className = `toast align-items-center text-white border-0 bg-${type}`;
+    toastBody.textContent = message;
+    
+    // Show the toast
+    statusToast.show();
+}
+
+// Update appointment status
+function updateAppointmentStatus(appointmentId, status) {
+    if (confirm(`Are you sure you want to mark this appointment as ${status}?`)) {
+        // Show loading state
+        const button = event.target.closest('button');
+        const originalHTML = button.innerHTML;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+        button.disabled = true;
+        
+        fetch(`/appointments/${appointmentId}/status/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ 'status': status })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showToast(`Appointment marked as ${status} successfully!`, 'success');
+                // Reload the page after a short delay
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                throw new Error(data.message || 'Failed to update appointment status');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast(error.message || 'An error occurred. Please try again.', 'danger');
+            // Reset button state
+            button.innerHTML = originalHTML;
+            button.disabled = false;
+        });
+    }
+}
+
+// Navigate to edit appointment page
+function editAppointment(appointmentId) {
+    window.location.href = `/appointments/${appointmentId}/edit/`;
+}
+
+// Initialize components when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize any additional components here
+});
+</script>
+{% endblock %}

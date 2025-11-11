@@ -1,0 +1,22 @@
+{% extends "records/base.html" %}
+{% block title %}Schedule - {{ doctor.name }}{% endblock %}
+{% block content %}
+<div style="max-width:900px;margin:2rem auto;">
+    <div class="card">
+        <h2 style="margin-top:0;">{{ doctor.name }} — Schedule</h2>
+        <div style="margin-bottom:1rem;color:#555">Specialization: {{ doctor.specialization }} | Experience: {{ doctor.experience_years }} years</div>
+        <h4>Upcoming appointments</h4>
+        {% for a in upcoming %}
+            <div style="padding:0.6rem 0;border-bottom:1px solid #f0f4f8;">{{ a.date }} — {{ a.patient.name }} — {{ a.status }}</div>
+        {% empty %}
+            <div style="color:#888">No upcoming appointments</div>
+        {% endfor %}
+        <h4 style="margin-top:1rem">Weekly availability</h4>
+        {% for av in availabilities %}
+            <div style="padding:0.45rem 0;border-bottom:1px solid #f0f4f8;">{{ av.get_day_of_week_display }} — {{ av.start_time }} to {{ av.end_time }}</div>
+        {% empty %}
+            <div style="color:#888">No availability set</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

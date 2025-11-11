@@ -1,0 +1,819 @@
+{% extends 'records/base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Reports</h2>
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-success" id="exportExcel">
+                <i class="fas fa-file-excel me-1"></i> Export Excel
+            </button>
+            <button type="button" class="btn btn-primary" id="exportCsv">
+                <i class="fas fa-file-csv me-1"></i> Export CSV
+            </button>
+            <button type="button" class="btn btn-secondary" id="themeToggle">
+                <i class="fas fa-moon"></i> Toggle Theme
+            </button>
+        </div>
+    </div>
+    
+    <!-- Report Filters -->
+    <div class="card mb-4">
+        <div class="card-header">
+        
+        </div>
+        <div class="card-body">
+            <form method="get" id="reportForm">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="reportType" class="form-label">Report Type</label>
+                        <select class="form-select" id="reportType" name="report_type" required>
+                            <option value="" selected disabled>Select Report Type</option>
+                            <option value="appointments">Appointments Summary</option>
+                            <option value="revenue">Revenue Report</option>
+                            <option value="patient">Patient Statistics</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="dateFrom" class="form-label">From Date</label>
+                        <input type="date" class="form-control" id="dateFrom" name="date_from">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="dateTo" class="form-label">To Date</label>
+                        <input type="date" class="form-control" id="dateTo" name="date_to">
+                    </div>
+                    <div class="col-12">
+                        
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Report Results -->
+    <div class="card">
+        <div class="card-body">
+            <div id="reportContent">
+                <div class="text-center text-muted py-5">
+                    <i class="fas fa-chart-pie fa-3x mb-3"></i>
+                    <p>Select report type and date range to generate a report</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Patient</th>
+                                <th>Doctor</th>
+                                <th>Status</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for appointment in appointments %}
+                            <tr>
+                                <td>{{ appointment.date|date:"M d, Y" }} {{ appointment.time|time:"h:i A" }}</td>
+                                <td>{{ appointment.patient.name }}</td>
+                                <td>Dr. {{ appointment.doctor.name }}</td>
+                                <td>
+                                    <span class="badge bg-{{ appointment.status|lower }}">
+                                        {{ appointment.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>{{ appointment.notes|truncatechars:30 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="revenueReportTemplate">
+    <div class="report-section">
+        <h4 class="mb-4">Revenue Report</h4>
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body text-center">
+                        <h6 class="card-title">Total Revenue</h6>
+                        <h3 class="mb-0">${{ total_revenue|floatformat:2 }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                        <h6 class="card-title">Paid</h6>
+                        <h3 class="mb-0">${{ paid_amount|floatformat:2 }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-dark">
+                    <div class="card-body text-center">
+                        <h6 class="card-title">Outstanding</h6>
+                        <h3 class="mb-0">${{ outstanding_amount|floatformat:2 }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-danger text-white">
+                    <div class="card-body text-center">
+                        <h6 class="card-title">Overdue</h6>
+                        <h3 class="mb-0">${{ overdue_amount|floatformat:2 }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">Revenue by Month</h6>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="revenueChart" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">Revenue by Category</h6>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="revenuePieChart" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Transaction Details</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Invoice #</th>
+                                <th>Patient</th>
+                                <th>Description</th>
+                                <th class="text-end">Amount</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for transaction in transactions %}
+                            <tr>
+                                <td>{{ transaction.date|date:"M d, Y" }}</td>
+                                <td>#{{ transaction.invoice_number }}</td>
+                                <td>{{ transaction.patient.name }}</td>
+                                <td>{{ transaction.description|truncatechars:30 }}</td>
+                                <td class="text-end">${{ transaction.amount|floatformat:2 }}</td>
+                                <td>
+                                    <span class="badge bg-{{ transaction.status|lower }}">
+                                        {{ transaction.get_status_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="patientReportTemplate">
+    <div class="report-section">
+        <h4 class="mb-4">Patient Statistics Report</h4>
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body text-center">
+                        <h6 class="card-title">Total Patients</h6>
+                        <h3 class="mb-0">{{ total_patients }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                        <h6 class="card-title">New This Month</h6>
+                        <h3 class="mb-0">{{ new_patients_this_month }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body text-center">
+                        <h6 class="card-title">Active Patients</h6>
+                        <h3 class="mb-0">{{ active_patients }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-dark">
+                    <div class="card-body text-center">
+                        <h6 class="card-title">Avg. Visits/Patient</h6>
+                        <h3 class="mb-0">{{ avg_visits_per_patient|floatformat:1 }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">Patient Growth</h6>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="patientGrowthChart" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">Patient Demographics</h6>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="demographicsPieChart" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Patient List</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Patient ID</th>
+                                <th>Name</th>
+                                <th>Gender</th>
+                                <th>Age</th>
+                                <th>Last Visit</th>
+                                <th>Total Visits</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for patient in patients %}
+                            <tr>
+                                <td>#{{ patient.id }}</td>
+                                <td>{{ patient.name }}</td>
+                                <td>{{ patient.gender }}</td>
+                                <td>{{ patient.age }}</td>
+                                <td>{{ patient.last_visit|date:"M d, Y"|default:"N/A" }}</td>
+                                <td>{{ patient.total_visits }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="inventoryReportTemplate">
+    <div class="report-section">
+        <h4 class="mb-4">Inventory Status Report</h4>
+        
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body text-center">
+                        <h6 class="card-title">Total Items</h6>
+                        <h3 class="mb-0">{{ total_items }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                        <h6 class="card-title">In Stock</h6>
+                        <h3 class="mb-0">{{ in_stock_items }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-dark">
+                    <div class="card-body text-center">
+                        <h6 class="card-title">Low Stock</h6>
+                        <h3 class="mb-0">{{ low_stock_items }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-danger text-white">
+                    <div class="card-body text-center">
+                        <h6 class="card-title">Out of Stock</h6>
+                        <h3 class="mb-0">{{ out_of_stock_items }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">Inventory by Category</h6>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="inventoryCategoryChart" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">Stock Status</h6>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="stockStatusChart" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Inventory Items</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Item Code</th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Current Stock</th>
+                                <th>Reorder Level</th>
+                                <th>Status</th>
+                                <th>Last Updated</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in inventory_items %}
+                            <tr>
+                                <td>{{ item.code }}</td>
+                                <td>{{ item.name }}</td>
+                                <td>{{ item.category }}</td>
+                                <td>{{ item.current_stock }} {{ item.unit }}</td>
+                                <td>{{ item.reorder_level }} {{ item.unit }}</td>
+                                <td>
+                                    <span class="badge bg-{{ item.status_class }}">
+                                        {{ item.status }}
+                                    </span>
+                                </td>
+                                <td>{{ item.updated_at|date:"M d, Y" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="customReportTemplate">
+    <div class="report-section">
+        <h4 class="mb-4">Custom Report</h4>
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            Customize your report using the filters above and click "Generate Report" to view the results.
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Report Results</h6>
+            </div>
+            <div class="card-body">
+                <div id="customReportResults">
+                    <p class="text-muted text-center py-5">No data available. Please adjust your filters and try again.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Theme switching
+function setTheme(theme) {
+    const isDark = theme === 'dark';
+    document.documentElement.setAttribute('data-bs-theme', theme);
+    localStorage.setItem('theme', theme);
+    
+    // Update toggle button icon
+    const icon = document.querySelector('#themeToggle i');
+    if (icon) {
+        icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+    }
+}
+
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Set initial theme
+    const savedTheme = localStorage.getItem('theme') || 
+        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    setTheme(savedTheme);
+    
+    // Toggle theme button
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', function() {
+            const currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            setTheme(newTheme);
+        });
+    }
+    // Set default date range (last 30 days)
+    const today = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    
+    document.getElementById('dateFrom').valueAsDate = thirtyDaysAgo;
+    document.getElementById('dateTo').valueAsDate = today;
+    
+    // Handle form submission
+    const reportForm = document.getElementById('reportForm');
+    if (reportForm) {
+        reportForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            generateReport();
+        });
+    }
+    
+    // Export buttons
+    document.getElementById('exportExcel')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        exportReport('excel');
+    });
+    
+    document.getElementById('exportCsv')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        exportReport('csv');
+    });
+    
+    // Generate report
+    function generateReport() {
+        const reportType = document.getElementById('reportType').value;
+        const dateFrom = document.getElementById('dateFrom').value;
+        const dateTo = document.getElementById('dateTo').value;
+        
+        // Show loading state
+        const reportContent = document.getElementById('reportContent');
+        reportContent.innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3">Generating report, please wait...</p>
+            </div>
+        `;
+        
+        // In a real app, this would be an AJAX call to the server
+        setTimeout(() => {
+            reportContent.innerHTML = `
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Report for ${reportType} from ${dateFrom} to ${dateTo}
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Date</th>
+                                <th>Details</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1</td>
+                                <td>${dateFrom}</td>
+                                <td>Sample ${reportType} data</td>
+                                <td><span class="badge bg-success">Active</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }, 1000);
+    }
+    
+    // Export report
+    function exportReport(format) {
+        const reportType = document.getElementById('reportType')?.value || 'report';
+        const dateFrom = document.getElementById('dateFrom')?.value || '';
+        const dateTo = document.getElementById('dateTo')?.value || '';
+        
+        // Build the export URL with parameters
+        let exportUrl = `/reports/?export=${format}`;
+        if (reportType) exportUrl += `&report_type=${reportType}`;
+        if (dateFrom) exportUrl += `&date_from=${dateFrom}`;
+        if (dateTo) exportUrl += `&date_to=${dateTo}`;
+        
+        // Redirect to the export URL
+        window.location.href = exportUrl;
+    }
+    
+    // Initialize charts
+    function initCharts() {
+        const chartEl = document.getElementById('reportChart');
+        if (chartEl) {
+            new Chart(chartEl, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    datasets: [
+                        {
+                            label: 'Completed',
+                            data: [12, 19, 15, 17, 22, 25, 28, 26, 24, 18, 15, 20],
+                            backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                            borderColor: 'rgba(40, 167, 69, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Pending',
+                            data: [8, 12, 10, 9, 14, 16, 18, 15, 12, 10, 8, 11],
+                            backgroundColor: 'rgba(255, 193, 7, 0.7)',
+                            borderColor: 'rgba(255, 193, 7, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Cancelled',
+                            data: [2, 3, 4, 2, 3, 5, 4, 3, 2, 1, 3, 2],
+                            backgroundColor: 'rgba(220, 53, 69, 0.7)',
+                            borderColor: 'rgba(220, 53, 69, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Revenue Chart
+        const revenueCtx = document.getElementById('revenueChart');
+        if (revenueCtx) {
+            new Chart(revenueCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    datasets: [{
+                        label: 'Monthly Revenue',
+                        data: [12500, 19000, 15000, 17000, 22000, 25000, 28000, 26000, 24000, 28000, 32000, 35000],
+                        borderColor: 'rgba(13, 110, 253, 1)',
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return '$' + context.raw.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Revenue Pie Chart
+        const revenuePieCtx = document.getElementById('revenuePieChart');
+        if (revenuePieCtx) {
+            new Chart(revenuePieCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Consultation', 'Lab Tests', 'Procedures', 'Medication', 'Other'],
+                    datasets: [{
+                        data: [45, 25, 15, 10, 5],
+                        backgroundColor: [
+                            'rgba(13, 110, 253, 0.8)',
+                            'rgba(25, 135, 84, 0.8)',
+                            'rgba(255, 193, 7, 0.8)',
+                            'rgba(13, 202, 240, 0.8)',
+                            'rgba(108, 117, 125, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(13, 110, 253, 1)',
+                            'rgba(25, 135, 84, 1)',
+                            'rgba(255, 193, 7, 1)',
+                            'rgba(13, 202, 240, 1)',
+                            'rgba(108, 117, 125, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Patient Growth Chart
+        const patientGrowthCtx = document.getElementById('patientGrowthChart');
+        if (patientGrowthCtx) {
+            new Chart(patientGrowthCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    datasets: [{
+                        label: 'New Patients',
+                        data: [25, 32, 28, 35, 42, 38, 45, 52, 48, 55, 62, 70],
+                        borderColor: 'rgba(13, 110, 253, 1)',
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 10
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Demographics Pie Chart
+        const demographicsPieCtx = document.getElementById('demographicsPieChart');
+        if (demographicsPieCtx) {
+            new Chart(demographicsPieCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['0-18', '19-35', '36-50', '51-65', '65+'],
+                    datasets: [{
+                        data: [15, 35, 25, 15, 10],
+                        backgroundColor: [
+                            'rgba(13, 110, 253, 0.8)',
+                            'rgba(25, 135, 84, 0.8)',
+                            'rgba(255, 193, 7, 0.8)',
+                            'rgba(253, 126, 20, 0.8)',
+                            'rgba(220, 53, 69, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(13, 110, 253, 1)',
+                            'rgba(25, 135, 84, 1)',
+                            'rgba(255, 193, 7, 1)',
+                            'rgba(253, 126, 20, 1)',
+                            'rgba(220, 53, 69, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Age Distribution'
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Inventory Category Chart
+        const inventoryCategoryCtx = document.getElementById('inventoryCategoryChart');
+        if (inventoryCategoryCtx) {
+            new Chart(inventoryCategoryCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Medications', 'Supplies', 'Equipment', 'Vaccines', 'Other'],
+                    datasets: [{
+                        label: 'Items by Category',
+                        data: [120, 85, 45, 60, 30],
+                        backgroundColor: [
+                            'rgba(13, 110, 253, 0.7)',
+                            'rgba(25, 135, 84, 0.7)',
+                            'rgba(255, 193, 7, 0.7)',
+                            'rgba(13, 202, 240, 0.7)',
+                            'rgba(108, 117, 125, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(13, 110, 253, 1)',
+                            'rgba(25, 135, 84, 1)',
+                            'rgba(255, 193, 7, 1)',
+                            'rgba(13, 202, 240, 1)',
+                            'rgba(108, 117, 125, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Stock Status Chart
+        const stockStatusCtx = document.getElementById('stockStatusChart');
+        if (stockStatusCtx) {
+            new Chart(stockStatusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['In Stock', 'Low Stock', 'Out of Stock'],
+                    datasets: [{
+                        data: [65, 20, 15],
+                        backgroundColor: [
+                            'rgba(25, 135, 84, 0.8)',
+                            'rgba(255, 193, 7, 0.8)',
+                            'rgba(220, 53, 69, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(25, 135, 84, 1)',
+                            'rgba(255, 193, 7, 1)',
+                            'rgba(220, 53, 69, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Stock Status'
+                        }
+                    }
+                }
+            });
+        }
+    };
+});
+</script>
+{% endblock %}

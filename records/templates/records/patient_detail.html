@@ -1,0 +1,105 @@
+{% extends "records/base.html" %}
+{% block title %}{{ patient.name }}{% endblock %}
+{% block content %}
+<div style="display:flex; gap:2rem; align-items:flex-start;">
+    <div style="flex: 0 0 320px;">
+        <div class="card">
+            <h3 style="margin-top:0;">{{ patient.name }}</h3>
+            <div style="color:#555">DOB: {{ patient.dob }}<br>
+            Email: {{ patient.email }}<br>
+            Phone: {{ patient.phone }}<br>
+            Address: {{ patient.address }}</div>
+            <div style="margin-top:1rem; display:flex; gap:0.5rem;">
+                <a href="{% url 'book_appointment' patient.id %}" class="btn" 
+                   style="background: rgba(3, 233, 244, 0.1) !important;
+                          color: #03e9f4 !important;
+                          border: 1px solid rgba(3, 233, 244, 0.7) !important;
+                          box-shadow: 0 0 10px rgba(3, 233, 244, 0.3), 
+                                      inset 0 0 10px rgba(3, 233, 244, 0.2);
+                          text-shadow: 0 0 5px rgba(3, 233, 244, 0.5);
+                          transition: all 0.3s ease;
+                          padding: 0.4rem 1.2rem;
+                          margin-right: 0.5rem;">
+                    <i class="fas fa-calendar-plus me-1"></i> Schedule
+                </a>
+                <a href="{% url 'patient_list' %}" class="btn" 
+                   style="background: transparent !important;
+                          color: #03e9f4 !important;
+                          border: 1px solid rgba(3, 233, 244, 0.5) !important;
+                          box-shadow: 0 0 8px rgba(3, 233, 244, 0.2), 
+                                      inset 0 0 8px rgba(3, 233, 244, 0.1);
+                          text-shadow: 0 0 3px rgba(3, 233, 244, 0.3);
+                          transition: all 0.3s ease;
+                          padding: 0.4rem 1.2rem;">
+                    <i class="fas fa-arrow-left me-1"></i> Back
+                </a>
+            </div>
+        </div>
+        <div class="card" style="margin-top:1rem;">
+            <h4 style="margin:0 0 0.75rem 0;">Medications</h4>
+            {% for m in medications %}
+                <div style="margin-bottom:0.6rem;"><strong>{{ m.name }}</strong><div style="color:#666">{{ m.dosage_instructions }}</div></div>
+            {% empty %}
+                <div style="color:#888">No medications</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div style="flex:1;">
+        <div class="card">
+            <h3 style="margin-top:0;">Medical Records</h3>
+            {% for r in records %}
+                <div style="padding:0.75rem 0; border-bottom:1px solid #f0f4f8;">
+                    <div style="font-weight:600">{{ r.diagnosis }} <span style="font-size:0.85rem;color:#888; font-weight:400">({{ r.date_recorded|date:'Y-m-d H:i' }})</span></div>
+                    <div style="color:#555">{{ r.treatment }}</div>
+                    {% if r.report %}
+                    <div style="margin-top:0.5rem;"><a href="{{ r.report.url }}" target="_blank">Download Report</a></div>
+                    {% endif %}
+                </div>
+            {% empty %}
+                <div style="color:#888">No medical records</div>
+            {% endfor %}
+        </div>
+
+        <div class="card" style="margin-top:1rem;">
+            <h3 style="margin-top:0;">Upload New Record</h3>
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {{ form.as_p }}
+<button type="submit" name="add_record" class="btn" 
+        style="background: rgba(3, 233, 244, 0.1) !important;
+               color: #03e9f4 !important;
+               border: 1px solid rgba(3, 233, 244, 0.7) !important;
+               box-shadow: 0 0 10px rgba(3, 233, 244, 0.3), 
+                           inset 0 0 10px rgba(3, 233, 244, 0.2);
+               text-shadow: 0 0 5px rgba(3, 233, 244, 0.5);
+               transition: all 0.3s ease;
+               padding: 0.4rem 1.2rem;
+               margin-top: 0.5rem;">
+    <i class="fas fa-upload me-1"></i> Upload
+</button>            </form>
+        </div>
+
+        <div class="card" style="margin-top:1rem;">
+            <h3 style="margin-top:0;">Vaccination History</h3>
+            {% for v in vaccinations %}
+                <div style="padding:0.5rem 0; border-bottom:1px solid #f0f4f8;">{{ v.vaccine_name }} - {{ v.date_given }}<div style="color:#666">{{ v.notes }}</div></div>
+            {% empty %}
+                <div style="color:#888">No vaccinations recorded</div>
+            {% endfor %}
+        </div>
+
+        <div class="card" style="margin-top:1rem;">
+            <h3 style="margin-top:0;">Billing</h3>
+            {% for b in bills %}
+                <div style="padding:0.5rem 0; border-bottom:1px solid #f0f4f8;">
+                    <div><strong>${{ b.amount }}</strong> - {{ b.description }}</div>
+                    <div style="color:#666">{{ b.created_at|date:'Y-m-d H:i' }} - {% if b.paid %}<span style="color:green">Paid</span>{% else %}<span style="color:#b45">Unpaid</span>{% endif %}</div>
+                </div>
+            {% empty %}
+                <div style="color:#888">No bills</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
